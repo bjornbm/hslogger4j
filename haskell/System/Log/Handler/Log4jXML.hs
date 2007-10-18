@@ -30,12 +30,23 @@ log4j XMLLayout log handler
 Written by Bjorn Buckwalter, bjorn.buckwalter\@gmail.com
 -}
 
-module System.Log.Handler.Log4jXML
-    where
+{- The following is an example log message with log4j's XMLLayout:
+
+<log4j:event logger="csa.Main" timestamp="1147868447298" level="DEBUG" thread="Timer-0">
+<log4j:message><![CDATA[Doing Message Tasks : 0 tasks in queue.]]></log4j:message>
+</log4j:event>
+
+-}
+
+module System.Log.Handler.Log4jXML 
+    ( log4jStreamHandler , log4jFileHandler
+    , log4jStreamHandler', log4jFileHandler'
+    ) where
 
 -- Base.
 import Control.Concurrent (ThreadId, myThreadId)  -- myThreadId is GHC only!
 import Control.Concurrent.MVar
+import Control.Monad (liftM2)
 import Data.List (isPrefixOf)
 import System.IO
 import System.Locale (defaultTimeLocale)
@@ -46,87 +57,110 @@ import System.Log
 import System.Log.Handler
 
 
--- | Log to a stream.
-log4jXMLStreamHandler :: Handle -> Priority -> IO (GenericHandler Handle)
-log4jXMLStreamHandler h pri = do
-    lock <- newMVar ()
-    let mywritefunc hdl (prio, msg) loggername =
-         withMVar lock (\_ -> do 
-            time   <- getCurrentTime
-            thread <- myThreadId
-            hPutStrLn h $ show 
-                $ Log4jEvent loggername time prio thread (Log4jMessage msg)
-            hFlush hdl
-            )
-    return (GenericHandler {priority = pri,
-                            privData = h,
-                            writeFunc = mywritefunc,
-                            closeFunc = \x -> return ()})
-
--- | Log to a file.
-log4jXMLFileHandler :: FilePath -> Priority -> IO (GenericHandler Handle)
-log4jXMLFileHandler fp pri = do
-                     h <- openFile fp AppendMode
-                     lh <- log4jXMLStreamHandler h pri
-                     return (lh{closeFunc = hClose})
-
-{- The following is an example log message with log4j's XMLLayout:
-
-<log4j:event logger="csa.Main" timestamp="1147868447298" level="DEBUG" thread="Timer-0">
-<log4j:message><![CDATA[Doing Message Tasks : 0 tasks in queue.]]></log4j:message>
-</log4j:event>
-
-We define two data types to represent this log message. Perhaps we should
-really use some fance XML library, especially to get the escaping right.
--}
-
--- | Data type representing a <log4j:message> element.
-data Log4jMessage = Log4jMessage String
-instance Show Log4jMessage where
-    show (Log4jMessage msg) = 
-        "<log4j:message>"
-        ++ "<![CDATA[" ++ escapeCDATA msg ++ "]]>" -- TODO msg should be escaped!
-        ++ "</log4j:message>"
-        where
-            -- | Escapes CDATA strings.
-            escapeCDATA = replace "]]>" "]]&lt;"  -- The best we can do, I guess.
-
--- | Data type representing a <log4j:event> element.
-data Log4jEvent = Log4jEvent String UTCTime Priority ThreadId Log4jMessage
-instance Show Log4jEvent where
-    show (Log4jEvent logger timestamp level thread message) =
-        "<log4j:event"
-        ++ " logger=\""    ++ escapeAttr logger             ++ "\""
-        ++ " timestamp=\"" ++ escapeAttr (millis timestamp) ++ "\""
-        ++ " level=\""     ++ escapeAttr (show level)       ++ "\""
-        ++ " thread=\""    ++ escapeAttr (show thread)      ++ "\""
-        ++ ">"
-        ++ show message
-        ++ "</log4j:event>"
-        where
-            -- | This is an ugly hack to get a unix epoch with milliseconds.
-            -- The use of "take 3" causes the milliseconds to always be 
-            -- rounded downwards, which I suppose may be the expected
-            -- behaviour for time.
-            millis t = formatTime defaultTimeLocale "%s" t
-                ++ (take 3 $ formatTime defaultTimeLocale "%q" t)
-            -- | Escapes attribute strings.
-            escapeAttr = replace "\"" "&quot;"
-                       . replace "<" "&lt;"
-                       . replace "&" "&amp;"
-
-
 -- Copied straight from 'System.Log.Handler.Simple'.
 data GenericHandler a = GenericHandler {priority :: Priority,
                                         privData :: a,
                                         writeFunc :: a -> LogRecord -> String -> IO (),
                                         closeFunc :: a -> IO () }
 
+-- Copied straight from 'System.Log.Handler.Simple'.
 instance LogHandler (GenericHandler a) where
     setLevel sh p = sh{priority = p}
     getLevel sh = priority sh
     emit sh lr loggername = (writeFunc sh) (privData sh) lr loggername
     close sh = (closeFunc sh) (privData sh)
+
+
+-- Handler that logs to a handle rendering message priorities according
+-- to the supplied function.
+log4jHandler :: (Priority -> String) -> Handle -> Priority -> IO (GenericHandler Handle)
+log4jHandler showPrio h pri = do
+    lock <- newMVar ()
+    let mywritefunc hdl (prio, msg) loggername = withMVar lock (\_ -> do 
+        time   <- getCurrentTime
+        thread <- myThreadId
+        hPutStrLn hdl (show $ createMessage loggername time prio thread msg)
+        hFlush hdl
+        )
+    return (GenericHandler { priority  = pri,
+                             privData  = h,
+                             writeFunc = mywritefunc,
+                             closeFunc = \x -> return () })
+    where
+        -- Creates an XML element representing a log4j event/message.
+        createMessage :: String -> UTCTime -> Priority -> ThreadId -> String -> XML
+        createMessage logger time prio thread msg = Elem "log4j:event" 
+            [ ("logger", logger       )
+            , ("time"  , millis time  )
+            , ("level" , showPrio prio)
+            , ("thread", show thread  )
+            ]
+            (Just (CDATA msg))
+            where
+                -- This is an ugly hack to get a unix epoch with milliseconds.
+                -- The use of "take 3" causes the milliseconds to always be 
+                -- rounded downwards, which I suppose may be the expected
+                -- behaviour for time.
+                millis t = formatTime defaultTimeLocale "%s" t
+                    ++ (take 3 $ formatTime defaultTimeLocale "%q" t)
+
+
+-- | Logs to a handle using hslogger priorities.
+log4jStreamHandler :: Handle -> Priority -> IO (GenericHandler Handle)
+log4jStreamHandler = log4jHandler show
+
+-- | Logs to a handle using log4j levels (priorities). The priorities of
+-- messages are shoehorned into log4j levels as follows:
+--      DEBUG -> DEBUG
+--      INFO, NOTICE -> INFO
+--      WARNING -> WARN
+--      ERROR, CRITICAL, ALERT -> ERROR
+--      EMERGENCY -> FATAL
+-- This is useful when the log will only be consumed by log4j tools and
+-- you don't want to go out of your way transforming the log or configuring
+-- the tools.
+log4jStreamHandler' :: Handle -> Priority -> IO (GenericHandler Handle)
+log4jStreamHandler' = log4jHandler show' where
+    show' :: Priority -> String
+    show' NOTICE    = "INFO"
+    show' WARNING   = "WARN"
+    show' CRITICAL  = "ERROR"
+    show' ALERT     = "ERROR"
+    show' EMERGENCY = "FATAL"
+    show' p         = show p  -- Identical for DEBUG, INFO, ERROR.
+
+-- | Log to a file with hslogger priorities.
+log4jFileHandler :: FilePath -> Priority -> IO (GenericHandler Handle)
+log4jFileHandler fp pri = openFile fp AppendMode 
+    >>= (flip log4jStreamHandler) pri
+    >>= \lh -> return $ lh { closeFunc = hClose }
+
+-- | Log to a file with log4j priorities.
+log4jFileHandler' :: FilePath -> Priority -> IO (GenericHandler Handle)
+log4jFileHandler' fp pri = openFile fp AppendMode 
+    >>= (flip log4jStreamHandler') pri
+    >>= \lh -> return $ lh { closeFunc = hClose }
+
+
+-- A type for building and showing XML elements. Could use a fancy XML
+-- library but am reluctant to introduce dependencies.
+data XML = Elem  String [(String, String)] (Maybe XML)
+         | CDATA String
+      -- | Text  String
+
+instance Show XML where
+    show (CDATA s) = "<![CDATA[" ++ escapeCDATA s ++ "]]>" where
+        escapeCDATA = replace "]]>" "]]&lt;"  -- The best we can do, I guess.
+    show (Elem name attrs child) = "<" ++ name ++ showAttrs attrs ++ showChild child where
+        showAttrs []         = ""
+        showAttrs ((k,v):as) = " " ++ k ++ "=\"" ++ escapeAttr v ++ "\"" 
+                             ++ showAttrs as
+            where escapeAttr = replace "\"" "&quot;" 
+                             . replace "<" "&lt;" 
+                             . replace "&" "&amp;"
+        showChild Nothing  = "/>"
+        showChild (Just c) = ">" ++ show c ++ "</" ++ name ++ ">"
+
 
 -- Replaces instances of first list by second list in third list.
 -- Definition blatantly stoled from jethr0's comment at
@@ -134,17 +168,10 @@ instance LogHandler (GenericHandler a) where
 -- with definition (or import) from MissingH.
 replace :: Eq a => [a] -> [a] -> [a] -> [a]
 replace _    _  [       ] = []
-replace from to xs@(a:as) =
-    if isPrefixOf from xs
-	then to ++ drop (length from) xs else a : replace from to as
+replace from to xs@(a:as) = if isPrefixOf from xs
+    then to ++ drop (length from) xs else a : replace from to as
 
--- Shoehorns the hslogger priorities to the log4j basic priorities.
--- This ensures compatible levels without having to hack Chainsaw/log4j.
-show' :: Priority -> String
-show' NOTICE    = "INFO"
-show' WARNING   = "WARN"
-show' CRITICAL  = "ERROR"
-show' ALERT     = "ERROR"
-show' EMERGENCY = "FATAL"
-show' l         = show l  -- Identical for DEBUG, INFO, ERROR.
+        
+test1 = Elem "log4j:event" [("time","1234"), ("level", "WARN")] Nothing
+test2 = Elem "log4j:event" [("time","1234"), ("level", "WARN")] $ Just $ Elem "log4j:message" [] $ Just $ CDATA "My log message"
 
