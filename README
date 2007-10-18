@@ -1,0 +1,53 @@
+hslogger4j contains hslogger[1] handlers compatible with log4j[2], John Goerzens logging library. In particulae logfiles created by the handlers can be published directly to the GUI-based log viewer Chainsaw v2[3].
+
+
+How to install -- Haskell
+=========================
+Use the regular cabal process:
+
+runhaskell Setup.lhs configure
+runhaskell Setup.lhs build
+runhaskell Setup.lhs install
+
+
+How to install -- Java
+======================
+This is only necessary if you want support for the hslogger levels.
+
+Add the 'hslogger4j-${date}.jar' to your classpath. To use you will also need to have the jars 'log4j-1.3alpha-7.jar' and 'log4j-xml-1.3alpha-7.jar' that are distributed with Chainsaw on your classpath.
+
+(On Mac OS X I added all three jars to '~/Library/Java/Extensions'. It seems that it is not sufficient that Chainsaw already includes its jars in the classpath when launching -- perhaps the plugin classloader uses does not inherit Chainsaw's classpath. It also would not work to add the jars to '~/.chainsaw/plugins'.)
+
+
+How to build -- Java
+====================
+If you have to rebuild the hslogger4j jar just run 'ant'[4]. The new jar will be created in the 'dist/lib' directory.
+
+
+Usage -- Haskell
+================
+In the IO monad:
+
+> h  <- connectTo "localhost" (PortNumber 4448)
+> lh <- log4jXMLStreamHandler h NOTICE
+> updateGlobalLogger rootLoggerName (addHandler lh)
+
+
+Usage -- Chainsaw
+=================
+Add a "XMLSocketReceiver" and set its decoder to "hslogger.XMLDecoder".
+
+
+Copyrights and licenses
+=======================
+The Haskell code is copyright John Goerzen and licensed under LGPL.
+The Java code is copyright of the Apache Software Foundation and licensed under the Apache License. See the source file headers for details.
+
+
+References
+==========
+
+[1] http://software.complete.org/hslogger
+[2] http://logging.apache.org/log4j/
+[3] http://logging.apache.org/chainsaw/
+[4] http://ant.apache.org/

@@ -1,0 +1,17 @@
+Name: hslogger4j
+Version: 0.1
+License: LGPL
+Maintainer: John Goerzen <jgoerzen@complete.org>
+Author: Bjorn Buckwalter
+Stability: Experimental
+Copyright: Copyright (c) 2004-2007 John Goerzen
+license-file: COPYRIGHT
+Synopsis: hslogger handler for log4j's XMLLayout
+Category: Interfaces
+extra-source-files: COPYING
+Hs-Source-Dirs: haskell
+Exposed-Modules: 
+    System.Log.Handler.Log4jXML,
+    System.Log.Handler.Log4jXMLLimited
+Build-Depends: base, time, hslogger
+
