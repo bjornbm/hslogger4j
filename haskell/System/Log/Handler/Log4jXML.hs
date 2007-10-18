@@ -46,7 +46,6 @@ module System.Log.Handler.Log4jXML
 -- Base.
 import Control.Concurrent (ThreadId, myThreadId)  -- myThreadId is GHC only!
 import Control.Concurrent.MVar
-import Control.Monad (liftM2)
 import Data.List (isPrefixOf)
 import System.IO
 import System.Locale (defaultTimeLocale)
@@ -90,12 +89,12 @@ log4jHandler showPrio h pri = do
         -- Creates an XML element representing a log4j event/message.
         createMessage :: String -> UTCTime -> Priority -> ThreadId -> String -> XML
         createMessage logger time prio thread msg = Elem "log4j:event" 
-            [ ("logger", logger       )
-            , ("time"  , millis time  )
-            , ("level" , showPrio prio)
-            , ("thread", show thread  )
+            [ ("logger"   , logger       )
+            , ("timestamp", millis time  )
+            , ("level"    , showPrio prio)
+            , ("thread"   , show thread  )
             ]
-            (Just (CDATA msg))
+            (Just $ Elem "log4j:message" [] (Just $ CDATA msg))
             where
                 -- This is an ugly hack to get a unix epoch with milliseconds.
                 -- The use of "take 3" causes the milliseconds to always be 
