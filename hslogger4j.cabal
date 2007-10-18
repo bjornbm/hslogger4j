@@ -10,8 +10,6 @@ Synopsis: hslogger handler for log4j's XMLLayout
 Category: Interfaces
 extra-source-files: COPYING
 Hs-Source-Dirs: haskell
-Exposed-Modules: 
-    System.Log.Handler.Log4jXML,
-    System.Log.Handler.Log4jXMLLimited
+Exposed-Modules: System.Log.Handler.Log4jXML
 Build-Depends: base, time, hslogger
 
