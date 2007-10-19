@@ -6,6 +6,7 @@ Copyright:      Copyright (c) 2004-2007 John Goerzen
 Author:         Bjorn Buckwalter
 Maintainer:     bjorn.buckwalter@gmail.com
 Stability:      Experimental
+Homepage:       http://hslogger4j.googlecode.com/
 Synopsis: hslogger handlers for log4j's XMLLayout
 Description: 
     Hslogger4j provides handlers for hslogger (John Goerzen's Haskell
