@@ -1,10 +1,19 @@
 Introduction
 ============
-Hslogger4j provides handlers for hslogger[1] (John Goerzen's Haskell logging library) that are compatible with log4j's XMLLayout. In particular log messages created by the handlers can be published directly to the GUI-based log viewer Chainsaw v2[2].
+Hslogger4j provides handlers for hslogger[1] (John Goerzen's Haskell
+logging library) that are compatible with log4j's XMLLayout. In
+particular log messages created by the handlers can be published
+directly to the GUI-based log viewer Chainsaw v2[2].
 
-The set of log levels in hslogger is richer than the basic set of log4j levels. Two sets of handlers are provided with hslogger4j, one which produces logs with hslogger's levels and one which "demotes" them to the basic log4j levels. If full hslogger levels are used some Java installation is necessary to make Chainsaw aware of them.
+The set of log levels in hslogger is richer than the basic set of
+log4j levels. Two sets of handlers are provided with hslogger4j,
+one which produces logs with hslogger's levels and one which "demotes"
+them to the basic log4j levels. If full hslogger levels are used
+some Java installation is necessary to make Chainsaw aware of them.
 
-Usage of the handlers in hslogger4j is analoguous to usage of the 'StreamHandler' and 'FileHandler' in 'System.Log.Handler.Simple'. The following handlers are provided:
+Usage of the handlers in hslogger4j is analoguous to usage of the
+'StreamHandler' and 'FileHandler' in 'System.Log.Handler.Simple'.
+The following handlers are provided:
 
   - log4jStreamHandler  (hslogger levels)
   - log4jFileHandler    (hslogger levels)
@@ -26,11 +35,18 @@ Java
 ----
 This is only necessary if you want to use the hslogger levels.
 
-Add 'hslogger4j.jar' to your classpath. To use you will also need to have the jars 'log4j-1.3alpha-7.jar' and 'log4j-xml-1.3alpha-7.jar' that are distributed with Chainsaw on your classpath.
+Add 'hslogger4j.jar' to your classpath. To use you will also need
+to have the jars 'log4j-1.3alpha-7.jar' and 'log4j-xml-1.3alpha-7.jar'
+that are distributed with Chainsaw on your classpath.
 
-(On Mac OS X I added all three jars to '~/Library/Java/Extensions'. It seems that it is not sufficient that Chainsaw already includes its jars in the classpath when launching -- perhaps the plugin classloader does not inherit Chainsaw's classpath. Adding the jars to '~/.chainsaw/plugins' wouldn't work either.)
+(On Mac OS X I added all three jars to '~/Library/Java/Extensions'.
+It seems that it is not sufficient that Chainsaw already includes
+its jars in the classpath when launching -- perhaps the plugin
+classloader does not inherit Chainsaw's classpath. Adding the jars
+to '~/.chainsaw/plugins' wouldn't work either.)
 
-If for whatever reason you have to rebuild the hslogger4j jar just run 'ant'[3]. The new jar will be created in the 'dist/lib' directory.
+If for whatever reason you have to rebuild the hslogger4j jar just
+run 'ant'[3]. The new jar will be created in the 'dist/lib' directory.
 
 
 Usage
@@ -48,14 +64,24 @@ In the IO monad:
 
 Chainsaw
 --------
-If you are only using the basic log4j levels just use Chainsaw's regular facilities to browse logs or listen for log messages (XMLSocketReceiver).
+If you are only using the basic log4j levels just use Chainsaw's
+regular facilities to browse logs or listen for log messages
+(XMLSocketReceiver).
 
-If you want to use the hslogger levels the easiest way to set up Chainsaw is to load the plugins in 'hslogger4j-plugins.xml' when launching Chainsaw. Two receivers will be defined, one that listens for logmessages and one for reading log files. Edit the properties of those receivers as needed (e.g. port, file name) and restart them.
+If you want to use the hslogger levels the easiest way to set up
+Chainsaw is to load the plugins in 'hslogger4j-plugins.xml' when
+launching Chainsaw. Two receivers will be defined, one that listens
+for logmessages and one for reading log files. Edit the properties
+of those receivers as needed (e.g. port, file name) and restart
+them.
 
 
 Copyrights and licenses
 =======================
-The Haskell code is copyright John Goerzen and licensed under LGPL. The Java code is copyright of the Apache Software Foundation and licensed under the Apache License. See the source file headers for details.
+The Haskell code is copyright John Goerzen and licensed under LGPL.
+The Java code is copyright of the Apache Software Foundation and
+licensed under the Apache License. See the source file headers for
+details.
 
 
 Bugs, patches and stuff
