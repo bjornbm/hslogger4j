@@ -1,7 +1,7 @@
 Introduction
 ============
 Hslogger4j provides handlers for hslogger[1] (John Goerzen's Haskell
-logging library) that are compatible with log4j's XMLLayout. In
+logging framework) that are compatible with log4j's XMLLayout. In
 particular log messages created by the handlers can be published
 directly to the GUI-based log viewer Chainsaw v2[2].
 
@@ -74,6 +74,9 @@ launching Chainsaw. Two receivers will be defined, one that listens
 for logmessages and one for reading log files. Edit the properties
 of those receivers as needed (e.g. port, file name) and restart
 them.
+
+You will also want to modify Chainsaw's formatting preferences to
+display levels as text instead of icons.
 
 
 Copyrights and licenses
