@@ -1,5 +1,9 @@
 hslogger4j contains hslogger[1] handlers compatible with log4j[2], John Goerzens logging library. In particulae logfiles created by the handlers can be published directly to the GUI-based log viewer Chainsaw v2[3].
 
+Usage of the handlers in hslogger4j is analoguous to usage of the 'StreamHandler' and 'FileHandler' in 'System.Log.Handler.Simple'.
+
+The set of log levels in hslogger is richer than the basic set of log4j levels. Two sets of handlers are provided with hslogger4j, one which produces logs with hslogger's levels and one which "demotes" them to the basic log4j levels.
+
 
 How to install -- Haskell
 =========================
